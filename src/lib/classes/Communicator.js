@@ -39,12 +39,10 @@ class Communicator extends ClassWithPlugins {
       _.each(adapters, this.registerAdapter, this)
     } else if (typeof adapters === 'object') {
       _.each(adapters, (adapter, name) => {
-        const _adapter = {
-          adapter,
-          name
-        };
+        adapter.name = name;
+        
 
-        this.registerAdapter(_adapter);
+        this.registerAdapter(adapter);
       });
     }
   }

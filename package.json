@@ -1,6 +1,6 @@
 {
   "name": "frntnd-communicator",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Communicator is a module that abstracts the communication between server and client using Connections, Requests and Adapters.",
   "main": "index.js",
   "scripts": {
