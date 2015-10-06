@@ -4,7 +4,7 @@
 import events from 'events';
 
 import _ from 'lodash';
-import promiseUtil from 'promise-util';
+import promiseUtil from 'frntnd-promise-util';
 
 import communicator from '../singletons/communicator';
 

@@ -1,6 +1,6 @@
 import $ from 'jquery';
 
-import promiseUtil from 'promise-util';
+import promiseUtil from 'frntnd-promise-util';
 
 const XHR = {
 

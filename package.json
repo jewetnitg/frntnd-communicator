@@ -15,8 +15,8 @@
     ]
   },
   "dependencies": {
-    "class-with-plugins": "file:../class-with-plugins",
     "frntnd-cacher": "0.0.1",
+    "frntnd-class-with-plugins": "0.0.1",
     "frntnd-promise-util": "0.0.1",
     "frntnd-route-util": "0.0.1",
     "jquery": "^2.1.4",

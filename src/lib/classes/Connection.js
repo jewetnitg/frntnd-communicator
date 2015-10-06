@@ -2,10 +2,10 @@ import events from 'events'
 
 import _ from 'lodash';
 
-import promiseUtil from 'promise-util';
-import routeUtil from 'route-util';
+import promiseUtil from 'frntnd-promise-util';
+import routeUtil from 'frntnd-route-util';
 
-import ClassWithPlugins from 'class-with-plugins';
+import ClassWithPlugins from 'frntnd-class-with-plugins';
 
 import adapters from '../singletons/adapters';
 import CONNECTION_STATE from '../enums/CONNECTION_STATE';

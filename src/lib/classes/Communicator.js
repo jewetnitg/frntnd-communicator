@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import ClassWithPlugins from 'class-with-plugins';
+import ClassWithPlugins from 'frntnd-class-with-plugins';
 
 import Adapter from './Adapter';
 import Connection from './Connection';

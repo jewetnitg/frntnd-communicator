@@ -2,17 +2,17 @@ import events from 'events';
 
 import _ from 'lodash';
 
-import ClassWithPlugins from 'class-with-plugins';
+import ClassWithPlugins from 'frntnd-class-with-plugins';
 
 import adapters from '../singletons/adapters';
 import connections from '../singletons/connections';
 
 import REQUEST_METHODS from '../enums/REQUEST_METHODS';
 
-import routeUtil from 'route-util';
-import promiseUtil from 'promise-util';
+import routeUtil from 'frntnd-route-util';
+import promiseUtil from 'frntnd-promise-util';
 import policyExecutor from 'policy-executor';
-import Cacher from 'cacher';
+import Cacher from 'frntnd-cacher';
 
 const EventEmitter = events.EventEmitter;
 
