@@ -1,25 +1,32 @@
-import CRUD_ACTIONS from './CRUD_ACTIONS';
+/**
+ * @module enums/REQUEST_METHODS
+ */
 
+/**
+ * Enum representing the methods a {@link Request} can have
+ * @name REQUEST_METHODS
+ * @enum REQUEST_METHODS
+ * @property POST {Object} Post method
+ * @property PUT {Object} Put method
+ * @property GET {Object} Get method
+ * @property DELETE {Object} Delete method
+ */
 const REQUEST_METHODS = {
 
   POST: {
-    value: 'POST',
-    crudAction: CRUD_ACTIONS.CREATE
+    value: 'POST'
   },
-  
+
   PUT: {
-    value: 'PUT',
-    crudAction: CRUD_ACTIONS.UPDATE
+    value: 'PUT'
   },
 
   GET: {
-    value: 'GET',
-    crudAction: CRUD_ACTIONS.READ
+    value: 'GET'
   },
 
   DELETE: {
-    value: 'DELETE',
-    crudAction: CRUD_ACTIONS.DELETE
+    value: 'DELETE'
   }
 
 };

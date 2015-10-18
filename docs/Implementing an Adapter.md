@@ -1,17 +1,28 @@
-import $ from 'jquery';
+The frntnd-communicator library needs {@link Adapter}s for {@link Connections}s to be useful,
+in this guide we will be setting up an {@link Adapter} that allows us to communicate with a server using XHR.
 
-import promiseUtil from 'frntnd-promise-util';
+XHR.js
+======
+```
+
+import $ from 'jquery';
 
 const XHR = {
 
+  name: 'XHR',
+
+  // XHR connections don't need to 'connect'
   connect(url) {
-    return promiseUtil.resolve();
+    return Promise.resolve();
   },
 
+  // XHR connections don't need to 'disconnect'
   disconnect(url) {
-    return promiseUtil.resolve();
+    return Promise.resolve();
   },
 
+  // The request object contains a: method, data and url property,
+  // $.ajax can do a request using these
   request(options) {
     return new Promise((resolve, reject) => {
       $.ajax(options)
@@ -24,13 +35,12 @@ const XHR = {
     });
   },
 
+  // an upload function, designed for sails js
+  // sends all files to the server in the 'files' property
   upload(options) {
     return new Promise((resolve, reject) => {
       var formData = new FormData();
       var xhr = new XMLHttpRequest();
-
-      /* Required for large files */
-      //xhr.setRequestHeader('X-CSRF-Token', csrfToken);
 
       _.each(options.data, (val, key) => {
         if (key === 'files') {
@@ -45,8 +55,6 @@ const XHR = {
           formData.append(key, val);
         }
       });
-
-      //formData.append('_csrf', csrfToken);
 
       xhr.open(options.method.toUpperCase(), options.url, true);
       xhr.send(formData);
@@ -64,3 +72,14 @@ const XHR = {
 };
 
 export default XHR;
+```
+
+
+app.js
+======
+```
+import XHR from './XHR';
+import communicator from 'frntnd-communicator';
+
+communicator.registerAdapter(XHR);
+```

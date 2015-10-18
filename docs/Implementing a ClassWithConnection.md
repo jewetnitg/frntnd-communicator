@@ -1,0 +1,1 @@
+Extending the {@link ClassWithConnection} is useful when you have a class that needs to communicate with a server.

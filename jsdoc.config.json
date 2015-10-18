@@ -15,11 +15,23 @@
   ],
   "templates": {
     "cleverLinks": true,
-    "monospaceLinks": false
+    "monospaceLinks": false,
+    "default": {
+      "outputSourceFiles": true
+    },
+    "systemName": "FRNTND-COMMUNICATOR",
+    "footer": "",
+    "copyright": "Rik Hoffbauer 2015",
+    "navType": "vertical",
+    "theme": "oblivion",
+    "linenums": true,
+    "collapseSymbols": false,
+    "inverseNav": true
   },
   "opts": {
     "encoding": "utf8",
     "destination": "./build/docs",
+    "template": "./node_modules/jsdoc-oblivion/template",
     "recurse": true,
     "tutorials": "./docs"
   }

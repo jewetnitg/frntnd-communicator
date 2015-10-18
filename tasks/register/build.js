@@ -6,7 +6,7 @@ module.exports = function (gulp, plugins) {
 
       // clean build dir
       'clean',
-
+      
       // run browserify
       'browserify',
 

@@ -1,18 +1,29 @@
-import events from 'events';
-
 import _ from 'lodash';
 
-import ClassWithPlugins from 'frntnd-class-with-plugins';
+import adapters from '../singletons/adapters';
 
-import promiseUtil from 'frntnd-promise-util';
+const resolveFn = (method, options) => {
+  return () => {
+    console.warn(`${method} method not implemented on adapter ${options.name}`);
+    return Promise.resolve();
+  };
+};
 
-const EventEmitter = events.EventEmitter;
+const abstractMethods = [
+  'connect',
+  'disconnect',
+  'request',
+  'upload',
+  'subscribe',
+  'unsubscribe'
+];
 
 /**
  * The {@link Adapter} class is an 'abstract' class, it can't be used without further implementation.
  * The properties below should be implemented in an implementation.
  *
  * @abstract
+ *
  * @property name {String} The name of the adapter, 'XHR' for example
  * @property connect {Function} Function that connects to the server, takes a url, should return a Promise
  * @property disconnect {Function} Function that disconnects to the server, takes a url, should return a Promise
@@ -20,45 +31,113 @@ const EventEmitter = events.EventEmitter;
  * @property unsubscribe {Function} Function that unsubscribes from a model on the server, takes a model, should return a Promise
  * @property upload {Function} Function that uploads a file to the server, takes a model, should return a Promise
  * @property request {Function} Function that executes a request to the server, should return a Promise
- * @param options {Object} Object containing the properties
+ *
+ * @property options {Object} **SET AUTOMATICALLY** Options object passed into the constructor
+ *
+ * @param options {Object} Object containing the properties (name, connect, disconnect, subscribe, unsubscribe, upload, request)
+ *
  * @class Adapter
+ *
+ * @see {@link Communicator}
+ * @see {@link Connection}
+ *
  * @global
+ * @example
+ * // XHR implementation.
+ * // the object passed into the Adapter constructor here is normally passed into
+ * // communicator.registerAdapter or ClassWithConnection.registerAdapter
+ * const adapter = new Adapter({
+ *
+ *   name: 'XHR',
+ *
+ *   connect(url) {
+ *     return Promise.resolve();
+ *   },
+ *
+ *   disconnect(url) {
+ *     return Promise.resolve();
+ *   },
+ *
+ *   // options consists of a 'data', 'url' and 'method' attribute, enough for $.ajax to work, as well as a 'Request' attribute,
+ *   // containing the Request of this request
+ *   request(options) {
+ *     return new Promise((resolve, reject) => {
+ *       $.ajax(options)
+ *         .done((data) => {
+ *           resolve(data);
+ *         })
+ *         .fail((data) => {
+ *           reject(data);
+ *         });
+ *     });
+ *   },
+ *
+ *   // upload function designed for sails js,
+ *   // sends files as multipart-form to the server in the files property
+ *   upload(options) {
+ *     return new Promise((resolve, reject) => {
+ *       var formData = new FormData();
+ *       var xhr = new XMLHttpRequest();
+ *
+ *       _.each(options.data, (val, key) => {
+ *         if (key === 'files') {
+ *           if (val instanceof FileList) {
+ *             _.each(val, (_val) => {
+ *               formData.append('files', _val);
+ *             });
+ *           } else {
+ *             formData.append('files', val);
+ *           }
+ *         } else {
+ *           formData.append(key, val);
+ *         }
+ *       });
+ *
+ *       xhr.open(options.method.toUpperCase(), options.url, true);
+ *       xhr.send(formData);
+ *
+ *       xhr.onerror = function (_data) {
+ *         reject(_data);
+ *       };
+ *
+ *       xhr.onload = function (_data) {
+ *         resolve(_data);
+ *       };
+ *     });
+ *   }
+ * });
  */
-class Adapter extends ClassWithPlugins {
+class Adapter {
 
-  static get _type() {
-    return 'Adapter';
+  constructor(options = {}) {
+    this.options = options;
+
+    // go through the abstract methods (methods that have to be implemented by providing them in the options object)
+    _.each(abstractMethods, (key) => {
+      this[`_${key}`] = this.options[key] || resolveFn(key, options);
+      this[`_${key}`].bind(this);
+    });
   }
 
-  constructor(options) {
-    const resolveFn = (method) => {
-      console.warn(`${method} method not implemented on adapter ${options.name}`);
-      return () => {
-        return promiseUtil.resolve();
-      };
-    };
+  /**
+   * Registers an {@link Adapter} implementation.
+   *
+   * @method register
+   * @memberof Adapter
+   * @static
+   * @param options {Object} Object containing the properties (implementation) for an {@link Adapter}
+   *
+   * @returns {Adapter}
+   */
+  static register(options) {
+    if (adapters[options.name]) {
+      throw new Error(`Can't register '${options.name}' adapter, adapter with this name already exists.`);
+    }
 
-    options._connect = options.connect || resolveFn('connect');
-    delete options.connect;
+    adapters[options.name] = new Adapter(options);
 
-    options._disconnect = options.disconnect || resolveFn('disconnect');
-    delete options.disconnect;
+    return adapters[options.name];
 
-    options._request = options.request || resolveFn('request');
-    delete options.request;
-
-    options._upload = options.upload || resolveFn('upload');
-    delete options.upload;
-
-    options._subscribe = options.subscribe || resolveFn('subscribe');
-    delete options.subscribe;
-
-    options._unsubscribe = options.unsubscribe || resolveFn('unsubscribe');
-    delete options.unsubscribe;
-
-    super(options);
-
-    this.hook('afterConstruct')
   }
 
   /**
@@ -67,16 +146,10 @@ class Adapter extends ClassWithPlugins {
    * @memberof Adapter
    * @method connect
    * @param url {String} The url of the server (including protocol and port, eg. http://some.domain.com:1337)
-   * @returns {Promise.<T>}
+   * @returns {Promise}
    */
   connect(url) {
-    return this.hook('beforeConnect', url)
-      .then(() => {
-        return this._connect(url)
-          .then(() => {
-            return this.hook('afterConnect');
-          });
-      });
+    return this._connect(url)
   }
 
   /**
@@ -85,7 +158,7 @@ class Adapter extends ClassWithPlugins {
    * @memberof Adapter
    * @method disconnect
    * @param url {String} The url of the server (including protocol and port, eg. http://some.domain.com:1337)
-   * @returns {Promise.<T>}
+   * @returns {Promise}
    */
   disconnect(url) {
     return this._disconnect(url);
@@ -97,21 +170,10 @@ class Adapter extends ClassWithPlugins {
    * @memberof Adapter
    * @method request
    * @param request {Object} Request object, with properties url, method and data
-   * @returns {Promise.<T>}
+   * @returns {Promise}
    */
   request(request) {
-    return this.hook('beforeRequest', request)
-      .then(() => {
-
-        return this._request(request)
-          .then((data) => {
-
-            return this.hook('afterRequest', data)
-              .then(() => {
-                return data;
-              });
-          });
-      });
+    return this._request(request)
   }
 
   /**
@@ -120,7 +182,7 @@ class Adapter extends ClassWithPlugins {
    * @memberof Adapter
    * @method upload
    * @param request {Object} Request object, with properties url, method and data
-   * @returns {Promise.<T>}
+   * @returns {Promise}
    */
   upload(request) {
     return this._upload(request);
@@ -132,7 +194,7 @@ class Adapter extends ClassWithPlugins {
    * @memberof Adapter
    * @method subscribe
    * @param event {String} Event to subscribe to
-   * @returns {Promise.<T>}
+   * @returns {Promise}
    */
   subscribe(event) {
     return this._subscribe(event);
@@ -144,7 +206,7 @@ class Adapter extends ClassWithPlugins {
    * @memberof Adapter
    * @method unsubscribe
    * @param event {String} Event to subscribe to
-   * @returns {Promise.<T>}
+   * @returns {Promise}
    */
   unsubscribe(event) {
     return this._unsubscribe(event);
