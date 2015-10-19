@@ -14,6 +14,12 @@ import Request from '../../../src/lib/classes/Request';
 import Adapter from '../../../src/lib/classes/Adapter';
 import Connection from '../../../src/lib/classes/Connection';
 
+import ConnectionInvalidPropertyException from '../../../src/lib/exceptions/ConnectionInvalidPropertyException';
+import ConnectionMissingPropertyException from '../../../src/lib/exceptions/ConnectionMissingPropertyException';
+
+import RequestInvalidPropertyException from '../../../src/lib/exceptions/RequestInvalidPropertyException';
+import RequestMissingPropertyException from '../../../src/lib/exceptions/RequestMissingPropertyException';
+
 describe('Connection', () => {
   const validRequest = {
     route: '/route/:splat',
@@ -45,6 +51,18 @@ describe('Connection', () => {
     cb();
   });
 
+  it('should register itself when instantiated', (cb) => {
+    const connection = new Connection({
+      name: 'someTestConnection',
+      url: 'someUrl',
+      adapter: 'TEST'
+    });
+
+    expect(communicator.connections.someTestConnection).to.equal(connection);
+
+    cb();
+  });
+
   it('should return an already existing instance if a Connection if instantiated with the same name', (cb) => {
     const conn1 = new Connection({
       name: '1',
@@ -64,14 +82,12 @@ describe('Connection', () => {
 
   describe('Connection#request', () => {
 
-    const baseError = `Cannot execute request`;
-
     it(`It should throw an error when trying to execute a request without a route`, (done) => {
       expect(() => {
         connection.request({
           method: 'get'
         })
-      }).to.throw(Error, `${baseError}, no route specified.`);
+      }).to.throw(RequestMissingPropertyException);
 
       done();
     });
@@ -81,7 +97,7 @@ describe('Connection', () => {
         connection.request({
           route: '/route/:splat'
         })
-      }).to.throw(Error, `${baseError}, no method specified.`);
+      }).to.throw(RequestMissingPropertyException);
 
       done();
     });
@@ -94,7 +110,7 @@ describe('Connection', () => {
           route: '/route/:splat',
           method
         })
-      }).to.throw(Error, `${baseError}, invalid method '${method}' specified.`);
+      }).to.throw(RequestInvalidPropertyException);
 
       done();
     });

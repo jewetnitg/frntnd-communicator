@@ -12,7 +12,9 @@ import routeUtil from 'frntnd-route-util';
 import policyExecutor from 'policy-executor';
 import Cacher from 'frntnd-cacher';
 
-import Connection from './Connection';
+import RequestInvalidPropertyException from '../exceptions/RequestInvalidPropertyException';
+import RequestMissingPropertyException from '../exceptions/RequestMissingPropertyException';
+import RequestRuntimeException from '../exceptions/RequestRuntimeException';
 
 const EventEmitter = events.EventEmitter;
 
@@ -113,63 +115,75 @@ class Request {
    * @method validateImplementation
    * @static
    * @param options {Object} Object containing the implementation for a {@link ClassWithConnection}
+   * @param anonymous {Boolean} Indicates whether the request that is passed in to verify is an anonymous request, a request that won't be registered and doesn't need a name
    * @throws Error
    */
-  static validateImplementation(options) {
-    const throwError = (reason) => {
-      const baseMessage = `Can't construct Request`;
+  static validateImplementation(options = {}, anonymous = false) {
 
-      if (reason) {
-        throw new Error(`${baseMessage} because ${reason}`);
-      } else {
-        throw new Error(`${baseMessage}.`);
+    if (!anonymous) {
+      // name - must be a string, if a request with this name already exists, stop validation,
+      // this newly discovered object will be returned, so the rest of the implementation is irrelevant
+
+      if (options.name === null || typeof options.name === 'undefined') {
+        throw new RequestMissingPropertyException('a name property is required');
       }
-    };
 
-    // name - must be a string, if a request with this name already exists, stop validation,
-    // this newly discovered object will be returned, so the rest of the implementation is irrelevant
+      if (typeof options.name !== 'string') {
+        throw new RequestInvalidPropertyException('name must be a string');
+      }
 
-    if (typeof options.name !== 'string') {
-      throwError(`name wasn't specified (as a string).`);
-    }
+      if (options.shortName === null || typeof options.shortName === 'undefined') {
+        throw new RequestMissingPropertyException('a shortName property is required');
+      }
 
-    if (requests[options.name]) {
-      return;
+      if (typeof options.shortName !== 'string') {
+        throw new RequestInvalidPropertyException('shortName must be a string');
+      }
     }
 
     // method - must be a string, capitalized it must match one of the REQUEST_METHODS: GET, POST, PUT or DELETE
 
+    if (options.method === null || typeof options.method === 'undefined') {
+      throw new RequestMissingPropertyException('a method property is required');
+    }
+
     if (typeof options.method !== 'string') {
-      throwError(`method wasn't specified (as a string).`);
+      throw new RequestInvalidPropertyException(`method must be a string`);
     }
 
     if (!REQUEST_METHODS[options.method.toUpperCase()]) {
-      throwError(`'${options.method}' is not a valid method.`);
+      throw new RequestInvalidPropertyException(`'${options.method}' is not a valid method.`);
     }
 
     // route - must be a string
 
+    if (options.route === null || typeof options.route === 'undefined') {
+      throw new RequestMissingPropertyException('a route property is required');
+    }
+
     if (typeof options.route !== 'string') {
-      throwError(`route wasn't specified (as a string).`);
+      throw new RequestInvalidPropertyException('route must be a string');
     }
 
     // connection - can be omitted, but, if specified, must be specified as a Connection or a string,
     // if its a string, a Connection with that name must exist
 
-    if (options.connection) {
+    if (typeof options.connection !== 'undefined' && options.connection !== null) {
+      const isConnectionInstance = options.connection.constructor && options.connection.constructor._type === 'Connection';
       let connection = null;
 
-      if (options.connection instanceof Connection) {
+      if (isConnectionInstance) {
         connection = options.connection;
       } else if (typeof options.connection === 'string') {
         connection = connections[options.connection];
+
+        if (!connection) {
+          throw new RequestInvalidPropertyException(`connection with name '${options.connection}' doesn't exist`);
+        }
       } else {
-        throwError(`connection was not specified as a string or an instance of Connection.`);
+        throw new RequestInvalidPropertyException('connection must be specified as a string or as an instance of a Connection');
       }
 
-      if (!connection) {
-        throwError(`connection '${options.connection}' was not found.`);
-      }
     }
   }
 
@@ -191,7 +205,7 @@ class Request {
    */
   execute(data = {}, connection = this.connection) {
     if (connection === null || typeof connection !== 'object') {
-      throw new Error(`Can't execute request, no Connection provided in the arguments and none specified on this Request.`);
+      throw new RequestRuntimeException(`Can't execute request, no Connection provided in the arguments and none specified on the Request being executed.`);
     }
 
     return connection.request(this, data);
@@ -236,6 +250,10 @@ class Request {
   /***************
    * PRIVATE API *
    ***************/
+
+  static get _type() {
+    return 'Request';
+  }
 
   _register(options = {}) {
     Request.validateImplementation(options);

@@ -7,8 +7,16 @@ import routeUtil from 'frntnd-route-util';
 import adapters from '../singletons/adapters';
 import connections from '../singletons/connections';
 
+import Request from './Request';
+
 import CONNECTION_STATE from '../enums/CONNECTION_STATE';
 import REQUEST_METHODS from '../enums/REQUEST_METHODS';
+
+import ConnectionInvalidPropertyException from '../exceptions/ConnectionInvalidPropertyException';
+import ConnectionMissingPropertyException from '../exceptions/ConnectionMissingPropertyException';
+
+import RequestInvalidPropertyException from '../exceptions/RequestInvalidPropertyException';
+import RequestMissingPropertyException from '../exceptions/RequestMissingPropertyException';
 
 /**
  * The {@link Connection} class serves to execute {@link Request}s using an {@link Adapter}.
@@ -114,20 +122,14 @@ class Connection {
    * @param options
    */
   static validateImplementation(options) {
-    const baseMessage = `Can't construct Connection`;
-
-    const makeMessage = (attributeName, attributeType) => {
-      if (attributeType) {
-        return `${baseMessage}, ${attributeName} should be specified as a ${attributeType} in the options.`;
-      } else {
-        return `${baseMessage}, ${attributeName}`;
-      }
-    };
-
     // name
 
+    if (typeof options.name === 'undefined' || options.name === null) {
+      throw new ConnectionInvalidPropertyException('name is not a string');
+    }
+
     if (typeof options.name !== 'string') {
-      throw new Error(makeMessage('name', 'string'));
+      throw new ConnectionInvalidPropertyException('name is not a string');
     }
 
     if (connections[options.name]) {
@@ -388,7 +390,7 @@ class Connection {
    *   .then(...)
    */
   request(request = {}, data = {}) {
-    Connection._validateRequest(request);
+    Request.validateImplementation(request, true);
 
     const _request = this._prepareRequest(request, data);
 
@@ -419,6 +421,10 @@ class Connection {
    * PRIVATE API *
    ***************/
 
+  static get _type() {
+    return 'Connection';
+  }
+
   _register(options = {}) {
     Connection.validateImplementation(options);
 
@@ -427,22 +433,6 @@ class Connection {
     }
 
     return connections[options.name];
-  }
-
-  static _validateRequest(request) {
-    const baseMessage = `Cannot execute request`;
-
-    if (typeof request.route !== 'string') {
-      throw new Error(`${baseMessage}, no route specified.`);
-    }
-
-    if (typeof request.method !== 'string') {
-      throw new Error(`${baseMessage}, no method specified.`);
-    }
-
-    if (!REQUEST_METHODS[request.method.toUpperCase()]) {
-      throw new Error(`${baseMessage}, invalid method '${request.method}' specified.`);
-    }
   }
 
   /**

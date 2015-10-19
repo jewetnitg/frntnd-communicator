@@ -16,6 +16,8 @@ import Request from '../../../src/lib/classes/Request';
 import Adapter from '../../../src/lib/classes/Adapter';
 import Connection from '../../../src/lib/classes/Connection';
 
+import RequestRuntimeException from '../../../src/lib/exceptions/RequestRuntimeException';
+
 describe('Request', () => {
   let adapter = null;
   let connection = null;
@@ -159,7 +161,7 @@ describe('Request', () => {
         route: '/route/:splat'
       });
 
-      expect(request.execute).to.throw(Error, "Can't execute request, no Connection provided in the arguments and none specified on this Request.");
+      expect(request.execute).to.throw(RequestRuntimeException);
 
       done();
     });

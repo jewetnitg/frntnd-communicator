@@ -230,6 +230,10 @@ class Adapter {
    * PRIVATE API *
    ***************/
 
+  static get _type() {
+    return 'Adapter';
+  }
+
   _register(options) {
     Adapter.validateImplementation(options);
 
