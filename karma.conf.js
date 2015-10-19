@@ -12,7 +12,7 @@ module.exports = function (config) {
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['mocha', 'browserify', 'chai-as-promised', 'chai', 'sinon-chai'],
+    frameworks: ['mocha', 'browserify', 'chai-as-promised', 'chai', 'sinon-chai', 'jsmockito-jshamcrest'],
 
     // list of files / patterns to load in the browser
     files: [
@@ -43,7 +43,8 @@ module.exports = function (config) {
       'karma-mocha',
       'karma-chai',
       'karma-chai-as-promised',
-      'karma-sinon-chai'
+      'karma-sinon-chai',
+      'karma-jsmockito-jshamcrest'
     ],
 
     // test results reporter to use

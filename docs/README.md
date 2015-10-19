@@ -6,25 +6,11 @@ Communicator is an api for communicating with a server, it executes {@link Reque
 Installing
 =====
 
-In the root of the project run:
 ```
-npm install
-```
-
-Testing
-=====
-In the root of the project run:
-```
-npm test
+npm install frntnd-communicator --save
 ```
 
-Building
-======
-In the root of the project run:
-```
-npm run build
-```
-
+for information on how to build the library itself and run tests see, {@tutorial installing, building and testing}
 
 Usage
 =====
@@ -33,11 +19,17 @@ Usage
 ```
 import communicator from 'communicator';
 
-communicator.registerAdapter({
+const adapter = communicator.registerAdapter({
   name: 'XHR',
   connect() {...},
   disconnect() {...},
   request() {...}
+  ...
+});
+
+// or
+
+const adapter = new communicator.Adapter({
   ...
 });
 ```
@@ -46,11 +38,19 @@ communicator.registerAdapter({
 ```
 import communicator from 'communicator';
 
-communicator.registerConnection({
+const connection = communicator.registerConnection({
   name: 'local-xhr',
   adapter: 'XHR',
   url: 'http://localhost:1337'
 });
+
+// or
+
+const connection = new communicator.Connection({
+  ...
+});
+
+
 ```
 
 #### Implement a {@link Request}
@@ -65,6 +65,12 @@ communicator.registerRequest({
   method: 'get',
   resolve() {..}, // optional
   reject() {..} // optional
+});
+
+// or
+
+const request = new communicator.Request({
+  ...
 });
 ```
 
@@ -89,18 +95,34 @@ class SomeClass extends ClassWithConnection {
 
 }
 
-// before instantiating make sure you have registered the Connections (and it's Adapters) this class uses
-// register the Adapter first because Connections depend on Adapters
+// before instantiating make sure you have registered the Connection (and it's Adapter) this class uses
+// you must register the Adapter first because Connections depend on Adapters
+
+
 SomeInstance.registerAdapter({
   name: 'XHR',
   ...
 });
 
-// register the connection
+// or
+
+const adapter = new SomeInstance.Adapter({
+  ...
+});
+
+
+// registering a connection
+
 SomeInstance.registerConnection({
   name: 'local-xhr',
   adapter: 'XHR',
   url: 'http://localhost:1337'
+});
+
+// or
+
+const connection = new SomeInstance.Connection({
+  ...
 });
 
 // instantiate the class

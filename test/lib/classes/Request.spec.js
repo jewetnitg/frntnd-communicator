@@ -4,6 +4,8 @@
 import _ from 'lodash';
 import $ from 'jquery';
 
+import routeUtil from 'frntnd-route-util';
+
 import communicator from '../../../src/lib/singletons/communicator';
 
 import _requests from '../../../src/lib/singletons/requests';
@@ -17,14 +19,18 @@ import Connection from '../../../src/lib/classes/Connection';
 describe('Request', () => {
   let adapter = null;
   let connection = null;
-  let connectionName = null;
-  let request = null;
-
-  before((done) => {
-    done();
-  });
 
   beforeEach((done) => {
+    adapter = new Adapter({
+      name: 'TEST'
+    });
+
+    connection = new Connection({
+      name: 'test-connection',
+      adapter: 'TEST',
+      url: 'http://localhost:1337'
+    });
+
     done();
   });
 
@@ -33,7 +39,130 @@ describe('Request', () => {
     cb();
   });
 
+  it('should register itself when instantiated', (cb) => {
+    const request = new Request({
+      name: 'testA',
+      shortName: 'test',
+      method: 'get',
+      route: '/route'
+    });
+
+    expect(communicator.requests.testA).to.equal(request);
+
+    cb();
+  });
+
+  it('should return an already existing instance if a Request if instantiated with the same name', (cb) => {
+    const req1 = new Request({
+      name: '1',
+      shortName: '1',
+      connection: 'test-connection',
+      method: 'get',
+      route: '/route/:splat'
+    });
+
+    const req2 = new Request({
+      name: '1',
+      shortName: '1',
+      connection: 'test-connection',
+      method: 'get',
+      route: '/route/:splat'
+    });
+
+    expect(req1).to.equal(req2, 'When instantiating another Request with the same name the first registered Request should be returned.');
+    cb();
+  });
+
   describe('Request#execute', () => {
+
+    it(`should request its data using its connection`, (done) => {
+      const request = new Request({
+        name: 'TestRequest',
+        shortName: 'test',
+        method: 'get',
+        connection: 'test-connection',
+        route: '/route/:splat'
+      });
+
+      const expected = 'data from Connection#request';
+
+      request.connection = {
+        request: mockFunction()
+      };
+
+      when(request.connection.request)(request, anything())
+        .thenReturn(Promise.resolve(expected));
+
+      request.execute()
+        .then(actual => {
+          expect(actual).to.equal(expected);
+          done();
+        });
+    });
+
+    it(`should use its connection to execute itself`, (done) => {
+      const request = new Request({
+        name: 'TestRequest',
+        shortName: 'test',
+        method: 'get',
+        connection: 'test-connection',
+        route: '/route/:splat'
+      });
+
+      const expected = 'data from Connection#request';
+
+      request.connection = {
+        request: mockFunction()
+      };
+
+      when(request.connection.request)(request, anything())
+        .thenReturn(Promise.resolve(expected));
+
+      request.execute()
+        .then(actual => {
+          expect(actual).to.equal(expected);
+          done();
+        });
+    });
+
+    it(`should be able to execute itself using a different connection`, (done) => {
+      const request = new Request({
+        name: 'TestRequest',
+        shortName: 'test',
+        method: 'get',
+        connection: 'test-connection',
+        route: '/route/:splat'
+      });
+
+      const expected = 'data from Connection#request';
+      const connection = {
+        request: mockFunction()
+      };
+
+      request.connection = null;
+
+      when(connection.request)(request, anything())
+        .thenReturn(Promise.resolve(expected));
+
+      request.execute({}, connection)
+        .then(actual => {
+          expect(actual).to.equal(expected);
+          done();
+        });
+    });
+
+    it(`should fail to execute if no connection is on the request, nor provided through the arguments`, (done) => {
+      const request = new Request({
+        name: 'TestRequest',
+        shortName: 'test',
+        method: 'get',
+        route: '/route/:splat'
+      });
+
+      expect(request.execute).to.throw(Error, "Can't execute request, no Connection provided in the arguments and none specified on this Request.");
+
+      done();
+    });
 
   });
 

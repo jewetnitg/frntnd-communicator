@@ -5,10 +5,17 @@ import _ from 'lodash';
 import communicator from '../singletons/communicator';
 import connections from '../singletons/connections';
 
+import _Connection from './Connection';
+import _Request from './Request';
+import _Adapter from './Adapter';
+
 /**
  * The {@link ClassWithConnection} class is there for you to extend.
  * It allows you to create classes that know how to connect to a server using a {@link Connection}.
  *
+ * @property Adapter {Adapter} The {@link Adapter} class, exposed so {@link Adapter}s can be constructed, available on the instance as well as the class
+ * @property Request {Request} The {@link Request} class, exposed so {@link Request}s can be constructed, available on the instance as well as the class
+ * @property Connection {Connection} The {@link Connection} class, exposed so {@link Connection}s can be constructed, available on the instance as well as the class
  * @property options {Object} Object passed into the constructor
  * @property connected {Boolean} Indicates whether the {@link Connection} has connected successfully
  * @property connection {Connection} The {@link Connection} for this class, only available once connected.
@@ -46,7 +53,7 @@ import connections from '../singletons/connections';
 class ClassWithConnection {
 
   constructor(options = {}) {
-    this.constructor.validateImplementation(options);
+    ClassWithConnection.validateImplementation(options);
 
     this.options = options;
 
@@ -60,6 +67,30 @@ class ClassWithConnection {
 
     this._callInitializeOnConnect();
     this.connect();
+  }
+
+  get Adapter() {
+    return _Adapter;
+  }
+
+  get Request() {
+    return _Request;
+  }
+
+  get Connection() {
+    return _Connection;
+  }
+
+  static get Adapter() {
+    return _Adapter;
+  }
+
+  static get Request() {
+    return _Request;
+  }
+
+  static get Connection() {
+    return _Connection;
   }
 
   /**************

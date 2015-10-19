@@ -8,6 +8,7 @@ import adapters from '../singletons/adapters';
 import connections from '../singletons/connections';
 
 import CONNECTION_STATE from '../enums/CONNECTION_STATE';
+import REQUEST_METHODS from '../enums/REQUEST_METHODS';
 
 /**
  * The {@link Connection} class serves to execute {@link Request}s using an {@link Adapter}.
@@ -84,15 +85,19 @@ import CONNECTION_STATE from '../enums/CONNECTION_STATE';
 class Connection {
 
   constructor(options = {}) {
-    this.constructor.validateImplementation(options);
+    const connection = this._register(options);
 
-    this.options = options;
+    if (connection === this) {
+      this.options = options;
 
-    this._state = CONNECTION_STATE.DISCONNECTED;
+      this._state = CONNECTION_STATE.DISCONNECTED;
 
-    this.adapter = adapters[this.options.adapter];
+      this.adapter = adapters[this.options.adapter];
 
-    this._emitter = new events.EventEmitter();
+      this._emitter = new events.EventEmitter();
+    }
+
+    return connection;
   }
 
   /***************
@@ -119,44 +124,31 @@ class Connection {
       }
     };
 
+    // name
+
     if (typeof options.name !== 'string') {
       throw new Error(makeMessage('name', 'string'));
     }
 
     if (connections[options.name]) {
-      throw new Error(makeMessage(`name '${options.name}' is not unique.`));
+      return;
     }
+
+    // adapter
 
     if (typeof options.adapter !== 'string') {
       throw new Error(makeMessage('adapter', 'string'));
     }
 
+    if (!adapters[options.adapter]) {
+      throw new Error(makeMessage(`adapter '${options.adapter}' not found.`));
+    }
+
+    // url
+
     if (typeof options.url !== 'string') {
       throw new Error(makeMessage('url', 'string'));
     }
-
-    const adapter = adapters[options.adapter];
-
-    if (!adapter) {
-      throw new Error(makeMessage(`adapter '${options.adapter}' not found.`));
-    }
-  }
-
-  /**
-   * Registers a {@link Connection}
-   * @method register
-   * @static
-   * @memberof Connection
-   * @param options {Object} Object containing the properties for a {@link Connection}
-   * @returns {Connection}
-   */
-  static register(options) {
-    this.validateImplementation(options);
-
-    connections[options.name] = new Connection(options);
-
-    return connections[options.name];
-
   }
 
   get state() {
@@ -395,12 +387,16 @@ class Connection {
    * connection.request(request, data)
    *   .then(...)
    */
-  request(request, data) {
+  request(request = {}, data = {}) {
+    Connection._validateRequest(request);
+
     const _request = this._prepareRequest(request, data);
 
     const handleResolve = (data) => {
       if (typeof request.resolve === 'function') {
         return request.resolve(data);
+      } else {
+        return data;
       }
     };
 
@@ -423,6 +419,32 @@ class Connection {
    * PRIVATE API *
    ***************/
 
+  _register(options = {}) {
+    Connection.validateImplementation(options);
+
+    if (!connections[options.name]) {
+      connections[options.name] = this;
+    }
+
+    return connections[options.name];
+  }
+
+  static _validateRequest(request) {
+    const baseMessage = `Cannot execute request`;
+
+    if (typeof request.route !== 'string') {
+      throw new Error(`${baseMessage}, no route specified.`);
+    }
+
+    if (typeof request.method !== 'string') {
+      throw new Error(`${baseMessage}, no method specified.`);
+    }
+
+    if (!REQUEST_METHODS[request.method.toUpperCase()]) {
+      throw new Error(`${baseMessage}, invalid method '${request.method}' specified.`);
+    }
+  }
+
   /**
    *
    * @param request
@@ -430,7 +452,7 @@ class Connection {
    * @returns {{}}
    * @private
    */
-  _prepareRequest(request, data) {
+  _prepareRequest(request = {}, data = {}) {
     const _request = {};
     const filledUrl = routeUtil.fillRouteWithPathVariables(request.route, data);
 

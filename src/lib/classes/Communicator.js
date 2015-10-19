@@ -1,8 +1,8 @@
 import _ from 'lodash';
 
-import Adapter from './Adapter';
-import Connection from './Connection';
-import Request from './Request';
+import _Adapter from './Adapter';
+import _Connection from './Connection';
+import _Request from './Request';
 
 import _adapters from '../singletons/adapters';
 import _connections from '../singletons/connections';
@@ -17,6 +17,10 @@ import _config from '../singletons/config';
  * @see {@link Adapter}
  * @see {@link Connection}
  * @see {@link Request}
+ *
+ * @property Adapter {Adapter} The {@link Adapter} class, exposed so {@link Adapter}s can be constructed, available on the instance as well as the class
+ * @property Request {Request} The {@link Request} class, exposed so {@link Request}s can be constructed, available on the instance as well as the class
+ * @property Connection {Connection} The {@link Connection} class, exposed so {@link Connection}s can be constructed, available on the instance as well as the class
  *
  * @property options {Object} Options object that was passed into the constructor
  *
@@ -42,11 +46,23 @@ import _config from '../singletons/config';
  *   }
  * });
  *
+ * // or
+ *
+ * const adapter = new communicator.Adapter({
+ *   ...
+ * });
+ *
  * // register a Connection
  * const connection = communicator.registerConnection({
  *   name: 'local-xhr',
  *   url: 'http://localhost:1337',
  *   adapter: 'XHR'
+ * });
+ *
+ * // or
+ *
+ * const connection = new communicator.Connection({
+ *   ...
  * });
  *
  * // register a Request
@@ -56,6 +72,12 @@ import _config from '../singletons/config';
  *   route: '/user/:id',
  *   method: 'get',
  *   connection: 'local-xhr'
+ * });
+ *
+ * // or
+ *
+ * const request = new communicator.Request({
+ *   ...
  * });
  *
  * // to execute the Request using its Connection
@@ -71,6 +93,35 @@ import _config from '../singletons/config';
  *   .then(...);
  */
 class Communicator {
+
+  constructor(options = {}) {
+    this.options = options;
+    this._implementOptions(options);
+  }
+
+  get Adapter() {
+    return _Adapter;
+  }
+
+  get Request() {
+    return _Request;
+  }
+
+  get Connection() {
+    return _Connection;
+  }
+
+  static get Adapter() {
+    return _Adapter;
+  }
+
+  static get Request() {
+    return _Request;
+  }
+
+  static get Connection() {
+    return _Connection;
+  }
 
   get config() {
     return _config;
@@ -111,7 +162,7 @@ class Communicator {
    * communicator.registerAdapters({...});
    */
   registerAdapters(adapters) {
-    return this.constructor.registerAdapters(adapters);
+    return Communicator.registerAdapters(adapters);
   }
 
   static registerAdapters(adapters) {
@@ -129,7 +180,7 @@ class Communicator {
    * communicator.registerConnections({...});
    */
   registerConnections(connections) {
-    return this.constructor.registerConnections(connections);
+    return Communicator.registerConnections(connections);
   }
 
   static registerConnections(connections) {
@@ -147,7 +198,7 @@ class Communicator {
    * communicator.registerRequests({...});
    */
   registerRequests(requests) {
-    return this.constructor.registerRequests(requests);
+    return Communicator.registerRequests(requests);
   }
 
   static registerRequests(requests) {
@@ -165,7 +216,7 @@ class Communicator {
    * communicator.registerAdapter({...});
    */
   registerAdapter(adapter) {
-    return this.constructor.registerAdapter(adapter);
+    return Communicator.registerAdapter(adapter);
   }
 
   static registerAdapter(adapter) {
@@ -173,7 +224,7 @@ class Communicator {
       _config.defaultAdapter = adapter.name;
     }
 
-    return Adapter.register(adapter);
+    return new _Adapter(adapter);
   }
 
   /**
@@ -188,7 +239,7 @@ class Communicator {
    * communicator.registerConnection({...});
    */
   registerConnection(connection) {
-    return this.constructor.registerConnection(connection);
+    return Communicator.registerConnection(connection);
   }
 
   static registerConnection(connection = {}) {
@@ -196,7 +247,7 @@ class Communicator {
       _config.defaultConnection = connection.name;
     }
 
-    return Connection.register(connection);
+    return new _Connection(connection);
   }
 
   /**
@@ -210,11 +261,11 @@ class Communicator {
    * communicator.registerRequest({...});
    */
   registerRequest(request) {
-    return this.constructor.registerRequest(request);
+    return Communicator.registerRequest(request);
   }
 
   static registerRequest(request = {}) {
-    return Request.register(request);
+    return new _Request(request);
   }
 
   /**
@@ -279,6 +330,24 @@ class Communicator {
    * PRIVATE API *
    ***************
    */
+
+  _implementOptions(options = {}) {
+    if (options.config) {
+      _.extend(this.config, options.config);
+    }
+
+    if (options.adapters) {
+      this.registerAdapters(options.adapters);
+    }
+
+    if (options.connections) {
+      this.registerConnections(options.connections);
+    }
+
+    if (options.requests) {
+      this.registerRequests(options.requests);
+    }
+  }
 
   /**
    * registers a hashmap of components for a class

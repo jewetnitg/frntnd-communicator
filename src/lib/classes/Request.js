@@ -12,6 +12,8 @@ import routeUtil from 'frntnd-route-util';
 import policyExecutor from 'policy-executor';
 import Cacher from 'frntnd-cacher';
 
+import Connection from './Connection';
+
 const EventEmitter = events.EventEmitter;
 
 /**
@@ -32,9 +34,6 @@ const EventEmitter = events.EventEmitter;
  * @see {@link ClassWithConnection}
  * @global
  * @example
- * // full implementation,
- * // as an end user you should pass this object into the registerRequest method on an instance of SomeClassWithConnection
- * // instead instantiating a Request manually like below
  * const request = new Request({
  *   name: 'UserLoginRequest',
  *   shortName: 'login',
@@ -66,61 +65,44 @@ const EventEmitter = events.EventEmitter;
 class Request {
 
   constructor(options = {}) {
-    this.constructor.validateImplementation(options);
+    const request = this._register(options);
 
-    this.options = options;
+    if (request === this) {
+      this.options = options;
 
-    this.method = this.options.method.toUpperCase();
+      this.method = this.options.method.toUpperCase();
 
-    this.route = this.options.route;
-    this.connection = this.options.connection;
+      this.route = this.options.route;
+      this.connection = this.options.connection;
 
-    if (this.options.resolve) {
-      this.resolve = this.options.resolve;
+      if (this.options.resolve) {
+        this.resolve = this.options.resolve;
+      }
+
+      if (this.options.reject) {
+        this.reject = this.options.reject;
+      }
+
+      if (this.options.connection) {
+        this.connection = connections[this.options.connection];
+      }
+
+      _.bindAll(
+        this,
+        'execute',
+        'resolve',
+        'reject'
+      );
+
+      this._initializeCacher();
     }
 
-    if (this.options.reject) {
-      this.reject = this.options.reject;
-    }
-
-    if (this.options.connection) {
-      this.connection = connections[this.options.connection];
-    }
-
-    _.bindAll(
-      this,
-      'execute',
-      'resolve',
-      'reject'
-    );
-
-    this._initializeCacher();
+    return request;
   }
 
-  /**
-   * Registers a {@link Request}
-   *
-   * @static
-   * @memberof Request
-   * @method register
-   * @param options {Object} Object that will be passed into the constructor of the {@link Request}
-   * @returns {Request}
-   * @example
-   * Request.register({
-   *   name: 'UserFindByIdRequest',
-   *   shortName: 'findById',
-   *   method: 'get',
-   *   route: '/user/:id',
-   *   connection: 'local-xhr'
-   * });
-   */
-  static register(options) {
-    this.validateImplementation(options);
-
-    requests[options.name] = new Request(options);
-
-    return requests[options.name];
-  }
+  /**************
+   * PUBLIC API *
+   **************/
 
   /**
    * Validates whether an object contains all properties to be considered a valid {@link Request} implementation.
@@ -134,49 +116,60 @@ class Request {
    * @throws Error
    */
   static validateImplementation(options) {
-    const baseMessage = `Can't construct Request`;
+    const throwError = (reason) => {
+      const baseMessage = `Can't construct Request`;
+
+      if (reason) {
+        throw new Error(`${baseMessage} because ${reason}`);
+      } else {
+        throw new Error(`${baseMessage}.`);
+      }
+    };
+
+    // name - must be a string, if a request with this name already exists, stop validation,
+    // this newly discovered object will be returned, so the rest of the implementation is irrelevant
 
     if (typeof options.name !== 'string') {
-      throw new Error(`${baseMessage}, name should be specified as a string.`);
+      throwError(`name wasn't specified (as a string).`);
     }
 
     if (requests[options.name]) {
-      throw new Error(`${baseMessage}, name should be unique.`);
+      return;
     }
+
+    // method - must be a string, capitalized it must match one of the REQUEST_METHODS: GET, POST, PUT or DELETE
 
     if (typeof options.method !== 'string') {
-      throw new Error(`${baseMessage}, method should be specified as a string.`);
+      throwError(`method wasn't specified (as a string).`);
     }
 
-    const method = REQUEST_METHODS[options.method.toUpperCase()];
-
-    if (!method) {
-      throw new Error(`${baseMessage}, '${options.method}' is not a valid method.`);
+    if (!REQUEST_METHODS[options.method.toUpperCase()]) {
+      throwError(`'${options.method}' is not a valid method.`);
     }
 
-    if (!options.route) {
-      throw new Error(`${baseMessage}, no route specified.`);
+    // route - must be a string
+
+    if (typeof options.route !== 'string') {
+      throwError(`route wasn't specified (as a string).`);
     }
 
-    if (!options.connection) {
-      console.warn('Request without connection registered');
-    } else {
-      const connection = connections[options.connection];
+    // connection - can be omitted, but, if specified, must be specified as a Connection or a string,
+    // if its a string, a Connection with that name must exist
+
+    if (options.connection) {
+      let connection = null;
+
+      if (options.connection instanceof Connection) {
+        connection = options.connection;
+      } else if (typeof options.connection === 'string') {
+        connection = connections[options.connection];
+      } else {
+        throwError(`connection was not specified as a string or an instance of Connection.`);
+      }
 
       if (!connection) {
-        throw new Error(`${baseMessage}, connection '${options.connection}' not found.`);
+        throwError(`connection '${options.connection}' was not found.`);
       }
-    }
-  }
-
-  _initializeCacher() {
-    if (this.options.cache) {
-      this.cache = new Cacher({
-        lifespan: typeof this.options.cache === 'number' ? this.options.cache : 5000,
-        execute: this.execute
-      });
-
-      this.execute = this.cache.execute;
     }
   }
 
@@ -196,9 +189,9 @@ class Request {
    *     console.log(data);
    *   });
    */
-  execute(data, connection = this.connection) {
-    if (typeof connection !== 'object') {
-      throw new Error(`Can't execute request, no Connection provided in the arguments and none specified on Request.`);
+  execute(data = {}, connection = this.connection) {
+    if (connection === null || typeof connection !== 'object') {
+      throw new Error(`Can't execute request, no Connection provided in the arguments and none specified on this Request.`);
     }
 
     return connection.request(this, data);
@@ -238,6 +231,31 @@ class Request {
    */
   reject(data) {
     return Promise.reject(data);
+  }
+
+  /***************
+   * PRIVATE API *
+   ***************/
+
+  _register(options = {}) {
+    Request.validateImplementation(options);
+
+    if (!requests[options.name]) {
+      requests[options.name] = this;
+    }
+
+    return requests[options.name];
+  }
+
+  _initializeCacher() {
+    if (this.options.cache) {
+      this.cache = new Cacher({
+        lifespan: typeof this.options.cache === 'number' ? this.options.cache : 5000,
+        execute: this.execute
+      });
+
+      this.execute = this.cache.execute;
+    }
   }
 
 }

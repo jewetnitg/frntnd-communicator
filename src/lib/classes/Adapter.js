@@ -110,34 +110,35 @@ const abstractMethods = [
 class Adapter {
 
   constructor(options = {}) {
-    this.options = options;
+    const adapter = this._register(options);
 
-    // go through the abstract methods (methods that have to be implemented by providing them in the options object)
-    _.each(abstractMethods, (key) => {
-      this[`_${key}`] = this.options[key] || resolveFn(key, options);
-      this[`_${key}`].bind(this);
-    });
-  }
+    if (adapter === this) {
+      this.options = options;
 
-  /**
-   * Registers an {@link Adapter} implementation.
-   *
-   * @method register
-   * @memberof Adapter
-   * @static
-   * @param options {Object} Object containing the properties (implementation) for an {@link Adapter}
-   *
-   * @returns {Adapter}
-   */
-  static register(options) {
-    if (adapters[options.name]) {
-      throw new Error(`Can't register '${options.name}' adapter, adapter with this name already exists.`);
+      // go through the abstract methods (methods that have to be implemented by providing them in the options object)
+      _.each(abstractMethods, (key) => {
+        this[`_${key}`] = this.options[key] || resolveFn(key, options);
+        this[`_${key}`].bind(this);
+      });
     }
 
-    adapters[options.name] = new Adapter(options);
+    return adapter;
+  }
 
-    return adapters[options.name];
+  /**************
+   * PUBLIC API *
+   **************/
 
+  static validateImplementation(options = {}) {
+    const baseMessage = `Can't construct Adapter`;
+
+    if (typeof options.name !== 'string') {
+      throw new Error(`${baseMessage}, name should be specified as a string.`);
+    }
+
+    if (adapters[options.name]) {
+      return;
+    }
   }
 
   /**
@@ -169,7 +170,13 @@ class Adapter {
    * @instance
    * @memberof Adapter
    * @method request
-   * @param request {Object} Request object, with properties url, method and data
+   *
+   * @param request {Object} Request object containing the properties listed below
+   *
+   * @property url {String} full url for the request, including protocol and port
+   * @property method {"POST"|"PUT"|"DELETE"|"GET"} http method of the request
+   * @property request {Request|Object} Either an instance of {@link Request} or this options object itself
+   * @property data {*} Data to send with the request
    * @returns {Promise}
    */
   request(request) {
@@ -181,7 +188,14 @@ class Adapter {
    * @instance
    * @memberof Adapter
    * @method upload
-   * @param request {Object} Request object, with properties url, method and data
+   *
+   * @param request {Object} Request object containing the properties listed below
+   *
+   * @property url {String} full url for the request, including protocol and port
+   * @property method {"POST"|"PUT"|"DELETE"|"GET"} http method of the request
+   * @property request {Request|Object} Either an instance of {@link Request} or this options object itself
+   * @property data {*} Data to send with the request
+   *
    * @returns {Promise}
    */
   upload(request) {
@@ -210,6 +224,20 @@ class Adapter {
    */
   unsubscribe(event) {
     return this._unsubscribe(event);
+  }
+
+  /***************
+   * PRIVATE API *
+   ***************/
+
+  _register(options) {
+    Adapter.validateImplementation(options);
+
+    if (!adapters[options.name]) {
+      adapters[options.name] = this;
+    }
+
+    return adapters[options.name];
   }
 
 }

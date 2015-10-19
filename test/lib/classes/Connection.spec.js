@@ -15,16 +15,28 @@ import Adapter from '../../../src/lib/classes/Adapter';
 import Connection from '../../../src/lib/classes/Connection';
 
 describe('Connection', () => {
+  const validRequest = {
+    route: '/route/:splat',
+    method: 'get'
+  };
   let adapter = null;
   let connection = null;
-  let connectionName = null;
-  let request = null;
 
   before((done) => {
-    done();
+    adapter = communicator.registerAdapter({
+      name: 'TEST'
+    });
+
+    connection = communicator.registerConnection({
+      name: 'test-connection',
+      adapter: 'TEST',
+      url: 'http://localhost:1337'
+    });
+    done()
   });
 
   beforeEach((done) => {
+    connection.adapter = adapter;
     done();
   });
 
@@ -33,7 +45,76 @@ describe('Connection', () => {
     cb();
   });
 
+  it('should return an already existing instance if a Connection if instantiated with the same name', (cb) => {
+    const conn1 = new Connection({
+      name: '1',
+      adapter: 'TEST',
+      url: '123'
+    });
+
+    const conn2 = new Connection({
+      name: '1',
+      adapter: 'TEST',
+      url: '123'
+    });
+
+    expect(conn1).to.equal(conn2, 'When instantiating another Connection with the same name the first registered Connection should be returned.');
+    cb();
+  });
+
   describe('Connection#request', () => {
+
+    const baseError = `Cannot execute request`;
+
+    it(`It should throw an error when trying to execute a request without a route`, (done) => {
+      expect(() => {
+        connection.request({
+          method: 'get'
+        })
+      }).to.throw(Error, `${baseError}, no route specified.`);
+
+      done();
+    });
+
+    it(`It should throw an error when trying to execute a request without a method`, (done) => {
+      expect(() => {
+        connection.request({
+          route: '/route/:splat'
+        })
+      }).to.throw(Error, `${baseError}, no method specified.`);
+
+      done();
+    });
+
+    it(`It should throw an error when trying to execute a request with an invalid method`, (done) => {
+      const method = 'asd';
+
+      expect(() => {
+        connection.request({
+          route: '/route/:splat',
+          method
+        })
+      }).to.throw(Error, `${baseError}, invalid method '${method}' specified.`);
+
+      done();
+    });
+
+    it(`It should use its Adapter to execute the request`, (done) => {
+      const expected = 'result';
+      const mockedAdapter = mock(adapter);
+
+      connection.adapter = mockedAdapter;
+
+      when(mockedAdapter)
+        .request(anything())
+        .thenReturn(Promise.resolve(expected));
+
+      connection.request(validRequest, {data: 'data'})
+        .then(actual => {
+          expect(actual).to.equal(expected);
+          done();
+        });
+    });
 
   });
 
