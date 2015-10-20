@@ -7,6 +7,7 @@ import routeUtil from 'frntnd-route-util';
 import adapters from '../singletons/adapters';
 import connections from '../singletons/connections';
 
+import Adapter from './Adapter';
 import Request from './Request';
 
 import CONNECTION_STATE from '../enums/CONNECTION_STATE';
@@ -90,15 +91,21 @@ import RequestMissingPropertyException from '../exceptions/RequestMissingPropert
 class Connection {
 
   constructor(options = {}) {
+    this._registerComponentsInOptions(options);
+
     const connection = Connection.get(options.name);
 
     if (connection) {
       return connection;
     }
 
-    this._register(options);
+    // initialize an empty object instantiated Requests belonging to this Connection will be stored on
+    options.exposeRequestsOn = options.exposeRequestsOn || 'requests';
+    this[options.exposeRequestsOn] = {};
 
     this.options = options;
+
+    this._register(options);
 
     this.adapter = adapters[this.options.adapter];
     this._state = CONNECTION_STATE.DISCONNECTED;
@@ -108,6 +115,107 @@ class Connection {
   /***************
    * PUBLIC API *
    ***************/
+
+  /**
+   * Registers {@link Adapter}s, provided as a hashmap Object<Object>
+   * @static
+   * @method registerAdapters
+   * @memberof Connection
+   * @param adapters {Object<Object>} Hashmap containing properties for {@link Adapter}s
+   * @returns {Object<Adapter>}
+   * @example
+   * Connection.registerAdapters({
+   *   someAdapter: {
+   *     ...
+   *   }
+   * });
+   */
+  static registerAdapters(adapters) {
+    const _adapters = {};
+
+    _.each(adapters, (adapter, name) => {
+      if (!adapter.name) {
+        adapter.name = name;
+      }
+
+      _adapters[adapter.name] = this.registerAdapter(adapter);
+    });
+
+    return _adapters;
+  }
+
+  /**
+   * Registers a single {@link Adapter}
+   * @static
+   * @method registerAdapter
+   * @memberof Connection
+   * @param adapter {Object} object containing properties for {@link Adapter}
+   * @returns {Adapter}
+   * @example
+   * Connection.registerAdapter({
+   *   name: 'someAdapter',
+   *   ...
+   * });
+   */
+  static registerAdapter(adapter = {}) {
+    return new Adapter(adapter);
+  }
+
+  /**
+   * Registers a request for this connection, the {@link Request} will become available under this.requests[request.shortName].
+   *
+   * @method registerRequest
+   * @instance
+   * @memberof Connection
+   *
+   * @param requests {Object<Object>} Hashmap containing objects containing the properties for the {@link Request}
+   *
+   * @returns {Object<Request>}
+   * @see {@link Request}
+   * @example
+   * connection.registerRequests({
+   *   UserLoginRequest: {
+   *     shortName: 'login',
+   *     method: 'get',
+   *     ...
+   *   }
+   * });
+   */
+  registerRequests(requests) {
+    const _requests = {};
+
+    _.each(requests, (request, name) => {
+      request.name = request.name || name;
+      request.connection = this.options.name;
+
+      _requests[request.shortName] = this.registerRequest(request);
+    });
+
+    return _requests;
+  }
+
+  /**
+   * Registers a {@link Request} for this {@link Connection}, the {@link Request} will become available under this.requests[request.shortName].
+   *
+   * @method registerRequest
+   * @instance
+   * @memberof Connection
+   *
+   * @param request {Object} Object containing the properties for the {@link Request}
+   *
+   * @returns {Request}
+   * @see {@link Request}
+   * @example
+   * connection.registerRequest({...});
+   */
+  registerRequest(request) {
+    const isRequestInstance = request && request.constructor && request.constructor._type === 'Request';
+    const _request = isRequestInstance ? request : new Request(request);
+
+    _request.execute._request = _request;
+
+    return this[this.options.exposeRequestsOn][_request.options.shortName] = _request.execute;
+  }
 
   /**
    * Gets a {@link Connection} instance by name
@@ -446,6 +554,16 @@ class Connection {
     }
 
     return connections[options.name];
+  }
+
+  _registerComponentsInOptions(options = {}) {
+    if (options.adapters) {
+      Connection.registerAdapters(options.adapters, 'Adapter');
+    }
+
+    if (options.requests) {
+      this.registerRequests(options.requests);
+    }
   }
 
   /**

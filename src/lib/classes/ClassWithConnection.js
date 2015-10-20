@@ -246,7 +246,6 @@ class ClassWithConnection {
     _request.execute._request = _request;
 
     return this[this.options.exposeRequestsOn][_request.options.shortName] = _request.execute;
-
   }
 
   /**

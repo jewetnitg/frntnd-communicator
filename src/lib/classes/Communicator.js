@@ -366,7 +366,7 @@ class Communicator {
         component.name = name;
       }
 
-      _components[component.shortName] = this[`register${className}`](component);
+      _components[component.shortName || component.name] = this[`register${className}`](component);
     });
 
     return _components;

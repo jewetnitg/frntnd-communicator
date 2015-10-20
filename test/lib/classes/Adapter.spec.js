@@ -33,8 +33,4 @@ describe('Adapter', () => {
     cb();
   });
 
-  describe('Adapter#request', () => {
-
-  });
-
 });
