@@ -18,10 +18,18 @@ import ClassWithConnection from '../../../src/lib/classes/ClassWithConnection';
 describe('ClassWithConnection', () => {
   let adapter = null;
   let connection = null;
-  let connectionName = null;
-  let request = null;
 
   before((done) => {
+    adapter = new Adapter({
+      name: 'TEST'
+    });
+
+    connection = new Connection({
+      name: 'TEST',
+      url: 'url',
+      adapter: 'TEST'
+    });
+
     done();
   });
 
@@ -32,6 +40,45 @@ describe('ClassWithConnection', () => {
   it('should be a class', (cb) => {
     expect(ClassWithConnection).to.be.a('function', "ClassWithConnection should be a class");
     cb();
+  });
+
+  describe('When instantiating', () => {
+
+    it('Should allow me to register Requests', done => {
+      const instanceWithConnection = new ClassWithConnection({
+        connection: 'TEST'
+      });
+
+      const request = instanceWithConnection.registerRequest({
+        name: 'test',
+        shortName: 'test',
+        method: 'get',
+        route: 'route'
+      });
+
+      expect(instanceWithConnection.requests.test).to.equal(request);
+
+      done();
+    });
+
+    it('Should allow me to pass a key for the attribute Requests registered on this class should be exposed on', done => {
+      const instanceWithConnection = new ClassWithConnection({
+        connection: 'TEST',
+        exposeRequestsOn: 'server'
+      });
+
+      const request = instanceWithConnection.registerRequest({
+        name: 'test',
+        shortName: 'test',
+        method: 'get',
+        route: 'route'
+      });
+
+      expect(instanceWithConnection.server.test).to.equal(request);
+
+      done();
+    });
+
   });
 
   describe('ClassWithConnection#connect', () => {

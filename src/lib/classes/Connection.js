@@ -39,9 +39,6 @@ import RequestMissingPropertyException from '../exceptions/RequestMissingPropert
  *
  * @global
  * @example
- * // full implementation,
- * // as an end user you should pass this object into the registerConnection method on the communicator singleton
- * // instead instantiating a Connection manually like below
  * const connection = new Connection({
  *   name: 'local-xhr',
  *   url: 'http://localhost:1337',
@@ -93,24 +90,36 @@ import RequestMissingPropertyException from '../exceptions/RequestMissingPropert
 class Connection {
 
   constructor(options = {}) {
-    const connection = this._register(options);
+    const connection = Connection.get(options.name);
 
-    if (connection === this) {
-      this.options = options;
-
-      this._state = CONNECTION_STATE.DISCONNECTED;
-
-      this.adapter = adapters[this.options.adapter];
-
-      this._emitter = new events.EventEmitter();
+    if (connection) {
+      return connection;
     }
 
-    return connection;
+    this._register(options);
+
+    this.options = options;
+
+    this.adapter = adapters[this.options.adapter];
+    this._state = CONNECTION_STATE.DISCONNECTED;
+    this._emitter = new events.EventEmitter();
   }
 
   /***************
    * PUBLIC API *
    ***************/
+
+  /**
+   * Gets a {@link Connection} instance by name
+   * @static
+   * @method get
+   * @memberof Connection
+   * @param name
+   * @returns {Connection|undefined}
+   */
+  static get(name) {
+    return connections[name];
+  }
 
   /**
    * Validates an implementation of a {@link Connection} (a POJO containing the properties), throws an Error when a validation error occurs.
@@ -125,31 +134,35 @@ class Connection {
     // name
 
     if (typeof options.name === 'undefined' || options.name === null) {
-      throw new ConnectionInvalidPropertyException('name is not a string');
+      throw new ConnectionMissingPropertyException('no name provided');
     }
 
     if (typeof options.name !== 'string') {
       throw new ConnectionInvalidPropertyException('name is not a string');
     }
 
-    if (connections[options.name]) {
-      return;
-    }
-
     // adapter
 
+    if (typeof options.adapter === 'undefined' || options.adapter === null) {
+      throw new ConnectionMissingPropertyException('no adapter provided');
+    }
+
     if (typeof options.adapter !== 'string') {
-      throw new Error(makeMessage('adapter', 'string'));
+      throw new ConnectionInvalidPropertyException('adapter is not a string');
     }
 
     if (!adapters[options.adapter]) {
-      throw new Error(makeMessage(`adapter '${options.adapter}' not found.`));
+      throw new ConnectionInvalidPropertyException(`adapter ${options.adapter} isn't a registered adapter`);
     }
 
     // url
 
+    if (typeof options.url === 'undefined' || options.url === null) {
+      throw new ConnectionMissingPropertyException('no url provided');
+    }
+
     if (typeof options.url !== 'string') {
-      throw new Error(makeMessage('url', 'string'));
+      throw new ConnectionInvalidPropertyException('url is not a string');
     }
   }
 

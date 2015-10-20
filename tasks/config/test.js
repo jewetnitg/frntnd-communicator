@@ -12,4 +12,11 @@ module.exports = function (gulp, plugins, growl) {
     }, done).start();
   });
 
+  gulp.task('test:ci', function (done) {
+    new Server({
+      configFile: __dirname + '/../../karma.conf.js',
+      singleRun: false
+    }, done).start();
+  });
+
 };

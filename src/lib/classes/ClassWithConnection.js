@@ -16,8 +16,10 @@ import _Adapter from './Adapter';
  * @property Adapter {Adapter} The {@link Adapter} class, exposed so {@link Adapter}s can be constructed, available on the instance as well as the class
  * @property Request {Request} The {@link Request} class, exposed so {@link Request}s can be constructed, available on the instance as well as the class
  * @property Connection {Connection} The {@link Connection} class, exposed so {@link Connection}s can be constructed, available on the instance as well as the class
+ *
  * @property options {Object} Object passed into the constructor
  * @property connected {Boolean} Indicates whether the {@link Connection} has connected successfully
+ *
  * @property connection {Connection} The {@link Connection} for this class, only available once connected.
  *
  * @class ClassWithConnection
@@ -30,6 +32,18 @@ import _Adapter from './Adapter';
  *
  *  constructor(options = {}) {
  *    options.connection = 'some-registered-connection';
+ *
+ *    options.adapters = {
+ *      ...
+ *    };
+ *
+ *    options.connections = {
+ *      ...
+ *    };
+ *
+ *    options.requests = {
+ *      ...
+ *    };
  *
  *    super(options);
  *
@@ -44,7 +58,6 @@ import _Adapter from './Adapter';
  *
  * }
  *
- * const someInstance = new SomeClass();
  * someInstance.on('connect', () => {
  *   someInstance.connection.get('/someRoute');
  * });
@@ -57,13 +70,13 @@ class ClassWithConnection {
 
     this.options = options;
 
-    this.requests = {};
+    // initialize an empty object instantiated Requests belonging to this class will be stored on
+    this.options.exposeRequestsOn = this.options.exposeRequestsOn || 'requests';
+    this[this.options.exposeRequestsOn] = {};
 
     this._emitter = new events.EventEmitter();
 
-    if (this.options.requests) {
-      this.registerRequests(this.options.requests);
-    }
+    this._registerComponentsInOptions(options);
 
     this._callInitializeOnConnect();
     this.connect();
@@ -203,11 +216,8 @@ class ClassWithConnection {
     const _requests = {};
 
     _.each(requests, (request, name) => {
-      if (!request.name) {
-        request.name = name;
-      }
-
-      request.connection = this.options.connection;
+      request.name = request.name || name;
+      request.connection = request.connection || this.options.connection;
 
       _requests[request.shortName] = this.registerRequest(request);
     });
@@ -234,7 +244,7 @@ class ClassWithConnection {
 
     _request.execute._request = _request;
 
-    return this.requests[request.shortName] = _request.execute;
+    return this[this.options.exposeRequestsOn][request.shortName] = _request.execute;
   }
 
   /**
@@ -328,6 +338,20 @@ class ClassWithConnection {
   /***************
    * PRIVATE API *
    ***************/
+
+  _registerComponentsInOptions(options = {}) {
+    if (options.adapters) {
+      ClassWithConnection.registerAdapters(options.adapters);
+    }
+
+    if (options.connections) {
+      ClassWithConnection.registerConnections(options.connections);
+    }
+
+    if (options.requests) {
+      this.registerRequests(options.requests);
+    }
+  }
 
   _callInitializeOnConnect() {
     if (typeof this.initialize === 'function') {

@@ -31,12 +31,13 @@ module.exports = function (config) {
 
     browserify: {
       debug: true,
-      transform: ['babelify'],
+      transform: ['babelify', require('browserify-babel-istanbul')],
       plugin: ['proxyquireify/plugin']
     },
 
     plugins: [
       'karma-spec-reporter',
+      'karma-coverage',
       'karma-browserify',
       'karma-phantomjs-launcher',
       'karma-chrome-launcher',
@@ -50,7 +51,37 @@ module.exports = function (config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['spec'],
+    reporters: [
+      'spec',
+      'coverage'
+    ],
+
+    coverageReporter: {
+      dir: './build/coverage',
+      reporters: [
+        {
+          file: 'lcov.txt',
+          type: 'lcovonly'
+        },
+        {
+          file: 'cobertura.txt',
+          type: 'cobertura'
+        },
+        {
+          file: 'teamcity.txt',
+          type: 'teamcity'
+        },
+        {
+          file: 'table.txt',
+          type: 'text'
+        },
+        {
+          file: 'summary.txt',
+          type: 'text-summary'
+        }
+      ]
+    },
+
 
     // web server port
     port: 9876,

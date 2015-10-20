@@ -6,7 +6,7 @@ module.exports = function (gulp, plugins) {
 
       // clean build dir
       'clean',
-      
+
       // run browserify
       'browserify',
 
@@ -15,6 +15,9 @@ module.exports = function (gulp, plugins) {
 
       // put the build in an archive
       'tar',
+
+      // publish documentation on gh-pages
+      'gh-pages',
 
       cb
     );

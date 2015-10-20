@@ -9,9 +9,12 @@ var sourcemaps = require('gulp-sourcemaps');
 
 var browserifyConfig = require('../../browserify.config');
 
+var istanbul = require("browserify-babel-istanbul");
+
 module.exports = function (gulp, plugins, growl) {
   gulp.task('browserify', function () {
     var bundler = browserify(browserifyConfig)
+      .transform(istanbul)
       .transform(babel);
 
     return bundler.bundle()

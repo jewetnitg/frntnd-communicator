@@ -67,44 +67,44 @@ const EventEmitter = events.EventEmitter;
 class Request {
 
   constructor(options = {}) {
-    const request = this._register(options);
+    const request = Request.get(options.name);
 
-    if (request === this) {
-      this.options = options;
-
-      this.method = this.options.method.toUpperCase();
-
-      this.route = this.options.route;
-      this.connection = this.options.connection;
-
-      if (this.options.resolve) {
-        this.resolve = this.options.resolve;
-      }
-
-      if (this.options.reject) {
-        this.reject = this.options.reject;
-      }
-
-      if (this.options.connection) {
-        this.connection = connections[this.options.connection];
-      }
-
-      _.bindAll(
-        this,
-        'execute',
-        'resolve',
-        'reject'
-      );
-
-      this._initializeCacher();
+    if (request) {
+      return request;
     }
 
-    return request;
+    this._register(options);
+
+    this.options = options;
+
+    this.method = this.options.method.toUpperCase();
+    this.route = this.options.route;
+    this.connection = this.options.connection;
+
+    this.resolve = this.options.resolve || this.resolve;
+    this.reject = this.options.reject || this.reject;
+
+    if (this.options.connection) {
+      this.connection = connections[this.options.connection];
+    }
+
+    _.bindAll(
+      this,
+      'execute',
+      'resolve',
+      'reject'
+    );
+
+    this._initializeCacher();
   }
 
   /**************
    * PUBLIC API *
    **************/
+
+  static get(name) {
+    return requests[name];
+  }
 
   /**
    * Validates whether an object contains all properties to be considered a valid {@link Request} implementation.

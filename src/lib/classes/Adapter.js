@@ -43,9 +43,8 @@ const abstractMethods = [
  *
  * @global
  * @example
- * // XHR implementation.
- * // the object passed into the Adapter constructor here is normally passed into
- * // communicator.registerAdapter or ClassWithConnection.registerAdapter
+ * // XHR implementation,
+ * // this doesn't have subscribe and unsubscribe implemented as this is not functionality of the XHR transport type
  * const adapter = new Adapter({
  *
  *   name: 'XHR',
@@ -110,34 +109,51 @@ const abstractMethods = [
 class Adapter {
 
   constructor(options = {}) {
-    const adapter = this._register(options);
+    const adapter = Adapter.get(options.name);
 
-    if (adapter === this) {
-      this.options = options;
-
-      // go through the abstract methods (methods that have to be implemented by providing them in the options object)
-      _.each(abstractMethods, (key) => {
-        this[`_${key}`] = this.options[key] || resolveFn(key, options);
-        this[`_${key}`].bind(this);
-      });
+    if (adapter) {
+      return adapter;
     }
 
-    return adapter;
+    this._register(options);
+
+    this.options = options;
+
+    // go through the abstract methods (methods that have to be implemented by providing them in the options object)
+    _.each(abstractMethods, (key) => {
+      this[`_${key}`] = this.options[key] || resolveFn(key, options);
+      this[`_${key}`].bind(this);
+    });
   }
 
   /**************
    * PUBLIC API *
    **************/
 
+  /**
+   * Gets an {@link Adapter} instance by name
+   * @static
+   * @method get
+   * @memberof Adapter
+   * @param name
+   * @returns {Adapter|undefined}
+   */
+  static get(name) {
+    return adapters[name];
+  }
+
+  /**
+   * Validates if the implementation of an {@link Adapter} is valid
+   * @method validateImplementation
+   * @static
+   * @memberof Adapter
+   * @param options
+   */
   static validateImplementation(options = {}) {
     const baseMessage = `Can't construct Adapter`;
 
     if (typeof options.name !== 'string') {
       throw new Error(`${baseMessage}, name should be specified as a string.`);
-    }
-
-    if (adapters[options.name]) {
-      return;
     }
   }
 
