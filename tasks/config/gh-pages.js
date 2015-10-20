@@ -5,10 +5,10 @@ module.exports = function (gulp, plugins, growl) {
 
   gulp.task('gh-pages', shell.task([
     'rm -rf .publish',
-    'mkdir .publish',
     'git clone ' + path.resolve(process.cwd()) + ' .publish',
     'cd .publish && '
-    + 'git checkout gh-pages && '
+    + 'git push origin --delete gh-pages &&'
+    + 'git checkout --orphan gh-pages && '
     + 'git rm -rf . && '
     + 'cp -R ../build/docs/. . && '
     + 'git add -A && '
