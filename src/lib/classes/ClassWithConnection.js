@@ -240,11 +240,13 @@ class ClassWithConnection {
    * instance.registerRequest({...});
    */
   registerRequest(request) {
-    const _request = communicator.registerRequest(request);
+    const isRequestInstance = request && request.constructor && request.constructor._type === 'Request';
+    const _request = isRequestInstance ? request : communicator.registerRequest(request);
 
     _request.execute._request = _request;
 
-    return this[this.options.exposeRequestsOn][request.shortName] = _request.execute;
+    return this[this.options.exposeRequestsOn][_request.options.shortName] = _request.execute;
+
   }
 
   /**

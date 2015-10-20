@@ -61,6 +61,25 @@ describe('ClassWithConnection', () => {
       done();
     });
 
+    it('Should allow me to register Requests by passing in an already instantiated Request', done => {
+      const request = new Request({
+        name: 'SomeRequest',
+        shortName: 'someRequest',
+        method: 'get',
+        route: 'route'
+      });
+
+      const instanceWithConnection = new ClassWithConnection({
+        connection: 'TEST'
+      });
+
+      instanceWithConnection.registerRequest(request);
+
+      expect(instanceWithConnection.requests.someRequest).to.equal(request.execute);
+
+      done();
+    });
+
     it('Should allow me to pass a key for the attribute Requests registered on this class should be exposed on', done => {
       const instanceWithConnection = new ClassWithConnection({
         connection: 'TEST',
