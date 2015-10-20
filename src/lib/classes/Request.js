@@ -124,7 +124,7 @@ class Request {
       // name - must be a string, if a request with this name already exists, stop validation,
       // this newly discovered object will be returned, so the rest of the implementation is irrelevant
 
-      if (options.name === null || typeof options.name === 'undefined') {
+      if (!options.name) {
         throw new RequestMissingPropertyException('a name property is required');
       }
 

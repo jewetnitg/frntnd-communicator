@@ -5,6 +5,9 @@ import _ from 'lodash';
 import communicator from '../singletons/communicator';
 import connections from '../singletons/connections';
 
+import ClassWithConnectionInvalidPropertyException from '../exceptions/ClassWithConnectionInvalidPropertyException';
+import ClassWithConnectionMissingPropertyException from '../exceptions/ClassWithConnectionMissingPropertyException';
+
 import _Connection from './Connection';
 import _Request from './Request';
 import _Adapter from './Adapter';
@@ -124,16 +127,16 @@ class ClassWithConnection {
    * @throws Error
    */
   static validateImplementation(options = {}) {
-    const baseMessage = `Can't construct ClassWithConnection`;
-
-    if (typeof options.connection !== 'string') {
-      throw new Error(`${baseMessage}, no connection specified`);
+    if (!options.connection) {
+      throw new ClassWithConnectionMissingPropertyException('no connection specified');
     }
 
-    const connection = connections[options.connection];
+    if (typeof options.connection !== 'string') {
+      throw new ClassWithConnectionInvalidPropertyException('connection must be a string');
+    }
 
-    if (!connection) {
-      throw new Error(`${baseMessage}, connection '${options.connection}' doesn't exist.`);
+    if (!connections[options.connection]) {
+      throw new ClassWithConnectionInvalidPropertyException(`connection '${options.connection}' doesn't exist.`);
     }
   }
 

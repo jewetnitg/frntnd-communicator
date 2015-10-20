@@ -1,6 +1,8 @@
 import _ from 'lodash';
 
 import adapters from '../singletons/adapters';
+import AdapterInvalidPropertyException from '../exceptions/AdapterInvalidPropertyException';
+import AdapterMissingPropertyException from '../exceptions/AdapterMissingPropertyException';
 
 const resolveFn = (method, options) => {
   return () => {
@@ -150,10 +152,12 @@ class Adapter {
    * @param options
    */
   static validateImplementation(options = {}) {
-    const baseMessage = `Can't construct Adapter`;
+    if (!options.name) {
+      throw new AdapterMissingPropertyException('no name provided');
+    }
 
     if (typeof options.name !== 'string') {
-      throw new Error(`${baseMessage}, name should be specified as a string.`);
+      throw new AdapterInvalidPropertyException('no should be a string');
     }
   }
 

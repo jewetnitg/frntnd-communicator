@@ -9,6 +9,9 @@ import _connections from '../singletons/connections';
 import _requests from '../singletons/requests';
 import _config from '../singletons/config';
 
+import CommunicatorInvalidPropertyException from '../exceptions/CommunicatorInvalidPropertyException';
+import CommunicatorMissingPropertyException from '../exceptions/CommunicatorMissingPropertyException';
+
 /**
  * The {@link Communicator} class serves to abstract communications with a server,
  * it does so by executing {@link Request}s using a {@link Connection} that talks to the server using an {@link Adapter}.
@@ -295,7 +298,7 @@ class Communicator {
           return connection;
         });
     } else {
-      throw new Error(`Can't connect to connection '${name}', connection not found.`);
+      throw new CommunicatorInvalidPropertyException(`connection '${name}' not found.`);
     }
   }
 
@@ -316,9 +319,9 @@ class Communicator {
 
     if (!connection) {
       if (nameIsString) {
-        throw new Error(`Can't disconnect, Connection with name '${name}' not found`);
+        throw new CommunicatorInvalidPropertyException(`connection '${name}' not found.`);
       } else {
-        throw new Error(`Can't disconnect, no Connection provided.`);
+        throw new CommunicatorInvalidPropertyException(`no connection provided.`);
       }
     }
 

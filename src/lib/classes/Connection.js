@@ -241,7 +241,7 @@ class Connection {
   static validateImplementation(options) {
     // name
 
-    if (typeof options.name === 'undefined' || options.name === null) {
+    if (!options.name) {
       throw new ConnectionMissingPropertyException('no name provided');
     }
 
