@@ -16,9 +16,6 @@ module.exports = function (gulp, plugins) {
       // put the build in an archive
       'tar',
 
-      // publish documentation on gh-pages
-      'gh-pages',
-
       cb
     );
   });
