@@ -3,6 +3,7 @@ import _ from 'lodash';
 import _Adapter from './Adapter';
 import _Connection from './Connection';
 import _Request from './Request';
+import _ClassWithConnection from './ClassWithConnection';
 
 import _adapters from '../singletons/adapters';
 import _connections from '../singletons/connections';
@@ -99,6 +100,12 @@ class Communicator {
 
   constructor(options = {}) {
     this.options = options;
+
+    _Adapter.communicator = this;
+    _Connection.communicator = this;
+    _Request.communicator = this;
+    _ClassWithConnection.communicator = this;
+
     this._implementOptions(options);
   }
 
@@ -114,6 +121,10 @@ class Communicator {
     return _Connection;
   }
 
+  get ClassWithConnection() {
+    return _ClassWithConnection;
+  }
+
   static get Adapter() {
     return _Adapter;
   }
@@ -124,6 +135,10 @@ class Communicator {
 
   static get Connection() {
     return _Connection;
+  }
+
+  static get ClassWithConnection() {
+    return _ClassWithConnection;
   }
 
   get config() {
@@ -169,7 +184,7 @@ class Communicator {
   }
 
   static registerAdapters(adapters) {
-    this._registerComponents(adapters, 'Adapter');
+    return this._registerComponents(adapters, 'Adapter');
   }
 
   /**
@@ -187,7 +202,7 @@ class Communicator {
   }
 
   static registerConnections(connections) {
-    this._registerComponents(connections, 'Connection');
+    return this._registerComponents(connections, 'Connection');
   }
 
   /**
@@ -365,9 +380,13 @@ class Communicator {
     const _components = {};
 
     _.each(components, (component, name) => {
-      if (!component.name) {
-        component.name = name;
+      if (component.constructor && component.constructor.type === className) {
+        // component is an instance already
+        _components[component.options.shortName || component.options.name] = component;
+        return true;
       }
+
+      component.name = component.name || name;
 
       _components[component.shortName || component.name] = this[`register${className}`](component);
     });

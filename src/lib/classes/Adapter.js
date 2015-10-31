@@ -111,7 +111,7 @@ const abstractMethods = [
 class Adapter {
 
   constructor(options = {}) {
-    const adapter = Adapter.get(options.name);
+    const adapter = Adapter.get(options.name || options);
 
     if (adapter) {
       return adapter;
@@ -141,6 +141,10 @@ class Adapter {
    * @returns {Adapter|undefined}
    */
   static get(name) {
+    if (name && name.constructor && name.constructor._type === 'Adapter') {
+      return name;
+    }
+
     return adapters[name];
   }
 

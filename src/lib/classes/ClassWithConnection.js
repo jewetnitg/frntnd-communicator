@@ -2,7 +2,6 @@ import events from 'events';
 
 import _ from 'lodash';
 
-import communicator from '../singletons/communicator';
 import connections from '../singletons/connections';
 
 import ClassWithConnectionInvalidPropertyException from '../exceptions/ClassWithConnectionInvalidPropertyException';
@@ -69,8 +68,6 @@ import _Adapter from './Adapter';
 class ClassWithConnection {
 
   constructor(options = {}) {
-    ClassWithConnection.validateImplementation(options);
-
     this.options = options;
 
     // initialize an empty object instantiated Requests belonging to this class will be stored on
@@ -80,6 +77,8 @@ class ClassWithConnection {
     this._emitter = new events.EventEmitter();
 
     this._registerComponentsInOptions(options);
+
+    ClassWithConnection.validateImplementation(options);
 
     this._callInitializeOnConnect();
     this.connect();
@@ -131,8 +130,8 @@ class ClassWithConnection {
       throw new ClassWithConnectionMissingPropertyException('no connection specified');
     }
 
-    if (typeof options.connection !== 'string') {
-      throw new ClassWithConnectionInvalidPropertyException('connection must be a string');
+    if (typeof options.connection !== 'string' && typeof options.connection !== 'object') {
+      throw new ClassWithConnectionInvalidPropertyException('connection must be a string or an object');
     }
 
     if (!connections[options.connection]) {
@@ -184,7 +183,7 @@ class ClassWithConnection {
    */
   connect(name = this.options.connection) {
     if (!this.connected) {
-      return communicator.connect(name)
+      return ClassWithConnection.communicator.connect(name)
         .then((connection) => {
           this.connection = connection;
           this.trigger('connect', connection);
@@ -244,7 +243,7 @@ class ClassWithConnection {
    */
   registerRequest(request) {
     const isRequestInstance = request && request.constructor && request.constructor._type === 'Request';
-    const _request = isRequestInstance ? request : communicator.registerRequest(request);
+    const _request = isRequestInstance ? request : ClassWithConnection.communicator.registerRequest(request);
 
     _request.execute._request = _request;
 
@@ -269,7 +268,7 @@ class ClassWithConnection {
    * });
    */
   static registerAdapter(adapter) {
-    return communicator.registerAdapter(adapter);
+    return ClassWithConnection.communicator.registerAdapter(adapter);
   }
 
   /**
@@ -291,7 +290,7 @@ class ClassWithConnection {
    * });
    */
   static registerAdapters(adapters) {
-    return communicator.registerAdapters(adapters);
+    return ClassWithConnection.communicator.registerAdapters(adapters);
   }
 
   /**
@@ -313,7 +312,7 @@ class ClassWithConnection {
    * });
    */
   static registerConnection(connection) {
-    return communicator.registerConnection(connection);
+    return ClassWithConnection.communicator.registerConnection(connection);
   }
 
   /**
@@ -336,7 +335,7 @@ class ClassWithConnection {
    * });
    */
   static registerConnections(connections) {
-    return communicator.registerConnections(connections);
+    return ClassWithConnection.communicator.registerConnections(connections);
   }
 
   /***************

@@ -196,6 +196,7 @@ describe('Connection', () => {
         done();
       });
 
+
       it(`It should throw an error when trying to execute a request with an invalid method`, (done) => {
         const method = 'asd';
 
@@ -209,7 +210,7 @@ describe('Connection', () => {
         done();
       });
 
-      it(`It should use its Adapter to execute the request`, (done) => {
+      it(`It should use its Adapter to execute the request and acquire the result of the request`, (done) => {
         const expected = 'result';
         const mockedAdapter = mock(adapter);
 

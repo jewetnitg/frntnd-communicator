@@ -4,8 +4,6 @@
 import _ from 'lodash';
 import $ from 'jquery';
 
-import routeUtil from 'frntnd-route-util';
-
 import communicator from '../../../src/lib/singletons/communicator';
 
 import _requests from '../../../src/lib/singletons/requests';
@@ -89,6 +87,9 @@ describe('Request', () => {
       const expected = 'data from Connection#request';
 
       request.connection = {
+        constructor: {
+          _type: 'Connection'
+        },
         request: mockFunction()
       };
 
@@ -114,6 +115,9 @@ describe('Request', () => {
       const expected = 'data from Connection#request';
 
       request.connection = {
+        constructor: {
+          _type: 'Connection'
+        },
         request: mockFunction()
       };
 
@@ -138,6 +142,9 @@ describe('Request', () => {
 
       const expected = 'data from Connection#request';
       const connection = {
+        constructor: {
+          _type: 'Connection'
+        },
         request: mockFunction()
       };
 

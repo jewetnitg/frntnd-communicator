@@ -93,7 +93,7 @@ class Connection {
   constructor(options = {}) {
     this._registerComponentsInOptions(options);
 
-    const connection = Connection.get(options.name);
+    const connection = Connection.get(options.name || options);
 
     if (connection) {
       return connection;
@@ -209,8 +209,7 @@ class Connection {
    * connection.registerRequest({...});
    */
   registerRequest(request) {
-    const isRequestInstance = request && request.constructor && request.constructor._type === 'Request';
-    const _request = isRequestInstance ? request : new Request(request);
+    const _request = new Request(request);
 
     _request.execute._request = _request;
 
@@ -226,6 +225,10 @@ class Connection {
    * @returns {Connection|undefined}
    */
   static get(name) {
+    if (name && name.constructor && name.constructor._type === 'Connection') {
+      return name;
+    }
+
     return connections[name];
   }
 
@@ -318,25 +321,6 @@ class Connection {
 
     return promise;
   }
-
-  _establishNewConnection() {
-    this._state = CONNECTION_STATE.CONNECTING;
-
-    return this.adapter.connect(this.options.url)
-      .then(() => {
-        this._state = CONNECTION_STATE.CONNECTED;
-        this.trigger('connect');
-
-        return Promise.resolve();
-      },
-      () => {
-        this._state = CONNECTION_STATE.DISCONNECTED;
-        this.trigger('connectionFail');
-
-        return Promise.reject();
-      });
-  }
-
 
   /**
    * Disconnects this {@link Connection}
@@ -515,17 +499,17 @@ class Connection {
 
     const _request = this._prepareRequest(request, data);
 
-    const handleResolve = (data) => {
+    const handleResolve = (_data) => {
       if (typeof request.resolve === 'function') {
-        return request.resolve(data);
+        return request.resolve(_data, data);
       } else {
-        return data;
+        return _data;
       }
     };
 
-    const handleReject = (data) => {
+    const handleReject = (_data) => {
       if (typeof request.reject === 'function') {
-        return request.reject(data);
+        return request.reject(_data, data);
       }
     };
 
@@ -575,15 +559,36 @@ class Connection {
    */
   _prepareRequest(request = {}, data = {}) {
     const _request = {};
-    const filledUrl = routeUtil.fillRouteWithPathVariables(request.route, data);
+    
+    request.fillRouteWithPathVariables = request.fillRouteWithPathVariables || routeUtil.makePathVariableInjector(request.route);
 
-    _request.url = routeUtil.concatenateBaseUrlAndUrl(this.options.url, filledUrl);
+    const filledUrl = request.fillRouteWithPathVariables(data);
+
+    _request.url = routeUtil.concatenateUrls(this.options.url, filledUrl);
     _request.method = request.method;
     _request.data = data;
 
     _request.request = request;
 
     return _request;
+  }
+
+   _establishNewConnection() {
+    this._state = CONNECTION_STATE.CONNECTING;
+
+    return this.adapter.connect(this.options.url)
+      .then(() => {
+        this._state = CONNECTION_STATE.CONNECTED;
+        this.trigger('connect');
+
+        return Promise.resolve();
+      },
+      () => {
+        this._state = CONNECTION_STATE.DISCONNECTED;
+        this.trigger('connectionFail');
+
+        return Promise.reject();
+      });
   }
 
 }

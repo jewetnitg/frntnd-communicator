@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "frntnd-cacher": "0.0.1",
-    "frntnd-route-util": "0.0.1",
+    "frntnd-route-util": "../frntnd-route-util",
     "jquery": "^2.1.4",
     "lodash": "^3.10.1",
     "policy-executor": "0.0.1"

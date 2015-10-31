@@ -8,8 +8,6 @@ import requests from '../singletons/requests';
 
 import REQUEST_METHODS from '../enums/REQUEST_METHODS';
 
-import routeUtil from 'frntnd-route-util';
-import policyExecutor from 'policy-executor';
 import Cacher from 'frntnd-cacher';
 
 import RequestInvalidPropertyException from '../exceptions/RequestInvalidPropertyException';
@@ -67,7 +65,7 @@ const EventEmitter = events.EventEmitter;
 class Request {
 
   constructor(options = {}) {
-    const request = Request.get(options.name);
+    const request = Request.get(options.name || options);
 
     if (request) {
       return request;
@@ -103,6 +101,10 @@ class Request {
    **************/
 
   static get(name) {
+    if (name && name.constructor && name.constructor._type === 'Request') {
+      return name;
+    }
+
     return requests[name];
   }
 
@@ -204,7 +206,7 @@ class Request {
    *   });
    */
   execute(data = {}, connection = this.connection) {
-    if (connection === null || typeof connection !== 'object') {
+    if (connection === null || !(connection && connection.constructor && connection.constructor._type === 'Connection')) {
       throw new RequestRuntimeException(`Can't execute request, no Connection provided in the arguments and none specified on the Request being executed.`);
     }
 
